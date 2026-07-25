@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Health Profile — Health Future Engine{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="side-link" href="{{ url_for('dashboard_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Dashboard
+    </a>
+    <a class="side-link active" href="{{ url_for('profile_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-4 3.6-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Health Profile
+    </a>
+    <a class="side-link" href="{{ url_for('timeline_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-7 4 14 2-7h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Timeline
+    </a>
+  </aside>
+
+  <main class="app-main">
+    <h1 class="page-title">Digital Health Profile</h1>
+    <p class="page-sub">This data powers every prediction and simulation. Update it any time your vitals change.</p>
+
+    <div class="card-hfe" style="max-width:720px;">
+      <div class="auth-error" id="error-box" style="display:none;"></div>
+      <div class="alert" id="success-box" style="display:none;background:#e6f6ef;color:var(--risk-low);border:1px solid #bfe8d5;border-radius:var(--radius-sm);padding:0.65rem 0.9rem;font-size:0.86rem;"></div>
+
+      <form id="profile-form">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Age</label>
+            <input type="number" min="1" max="120" class="form-control hfe-input" id="age" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Gender</label>
+            <select class="form-control hfe-input" id="gender">
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">BMI</label>
+            <input type="number" step="0.1" min="10" max="60" class="form-control hfe-input" id="bmi" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Systolic blood pressure (mmHg)</label>
+            <input type="number" min="70" max="250" class="form-control hfe-input" id="systolic_bp" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Fasting glucose (mg/dL)</label>
+            <input type="number" min="40" max="400" class="form-control hfe-input" id="glucose" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Total cholesterol (mg/dL)</label>
+            <input type="number" min="80" max="400" class="form-control hfe-input" id="cholesterol" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Exercise (hours / week)</label>
+            <input type="number" step="0.5" min="0" max="30" class="form-control hfe-input" id="exercise_hours_week" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Average sleep (hours / night)</label>
+            <input type="number" step="0.5" min="2" max="12" class="form-control hfe-input" id="sleep_hours" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Stress level (1–10)</label>
+            <input type="number" min="1" max="10" class="form-control hfe-input" id="stress_level" required>
+          </div>
+          <div class="col-md-6 d-flex flex-column justify-content-end">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="smoker">
+              <label class="form-check-label" for="smoker">I currently smoke</label>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="family_history">
+              <label class="form-check-label" for="family_history">Family history of chronic disease</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-signal mt-4" id="submit-btn">Save profile &amp; run prediction</button>
+      </form>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+HFE.requireAuth();
+
+const fields = ["age","bmi","systolic_bp","glucose","cholesterol","exercise_hours_week","sleep_hours","stress_level"];
+
+async function loadProfile() {
+  try {
+    const { profile } = await HFE.apiFetch("/api/profile");
+    if (!profile || !profile.id) return;
+    fields.forEach(f => { if (profile[f] !== undefined) document.getElementById(f).value = profile[f]; });
+    if (profile.gender) document.getElementById("gender").value = profile.gender;
+    document.getElementById("smoker").checked = !!profile.smoker;
+    document.getElementById("family_history").checked = !!profile.family_history;
+  } catch (e) { /* no profile yet — fine */ }
+}
+loadProfile();
+
+document.getElementById("profile-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorBox = document.getElementById("error-box");
+  const successBox = document.getElementById("success-box");
+  const btn = document.getElementById("submit-btn");
+  errorBox.style.display = "none";
+  successBox.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  const payload = {};
+  fields.forEach(f => payload[f] = parseFloat(document.getElementById(f).value));
+  payload.gender = document.getElementById("gender").value;
+  payload.smoker = document.getElementById("smoker").checked ? 1 : 0;
+  payload.family_history = document.getElementById("family_history").checked ? 1 : 0;
+
+  try {
+    await HFE.apiFetch("/api/profile", { method: "PUT", body: JSON.stringify(payload) });
+    await HFE.apiFetch("/api/predict/risk", { method: "POST", body: JSON.stringify({}) });
+    successBox.textContent = "Profile saved. Your dashboard has a fresh prediction.";
+    successBox.style.display = "block";
+    setTimeout(() => window.location.href = "/dashboard", 900);
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save profile & run prediction";
+  }
+});
+</script>
+{% endblock %}

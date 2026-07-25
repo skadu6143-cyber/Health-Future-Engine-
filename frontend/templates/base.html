@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Health Future Engine{% endblock %}</title>
+<meta name="description" content="See your health before it happens.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- App styles -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+{% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg hfe-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('index') }}">
+      <span class="hfe-brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 14L7 14L9.5 8L13 18L15.5 12L18 14L22 14" stroke="#17B6A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18 14L22 14" stroke="#17B6A0" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Health Future Engine
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" style="border-color: rgba(255,255,255,0.3);">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navContent">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#modules">Modules</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}#how">How it works</a></li>
+        <li class="nav-item" id="nav-dashboard-link" style="display:none;"><a class="nav-link" href="{{ url_for('dashboard_page') }}">Dashboard</a></li>
+        <li class="nav-item ms-lg-2" id="nav-auth-guest">
+          <a class="nav-link d-inline" href="{{ url_for('login_page') }}">Log in</a>
+          <a class="btn btn-signal btn-sm ms-2" href="{{ url_for('register_page') }}">Get started</a>
+        </li>
+        <li class="nav-item ms-lg-2" id="nav-auth-user" style="display:none;">
+          <button class="btn btn-outline-signal btn-sm" id="logout-btn">Log out</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer class="hfe-footer">
+  <div class="container d-flex flex-wrap justify-content-between gap-3">
+    <div>
+      <strong style="color:#fff;">Health Future Engine</strong>
+      <div class="mt-1">See your health before it happens.</div>
+    </div>
+    <div class="mono" style="opacity:0.6;">Built with Flask · MongoDB · Scikit-learn</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

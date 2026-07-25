@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Timeline — Health Future Engine{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="side-link" href="{{ url_for('dashboard_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Dashboard
+    </a>
+    <a class="side-link" href="{{ url_for('profile_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-4 3.6-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Health Profile
+    </a>
+    <a class="side-link active" href="{{ url_for('timeline_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-7 4 14 2-7h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Timeline
+    </a>
+  </aside>
+
+  <main class="app-main">
+    <h1 class="page-title">Interactive Health Timeline</h1>
+    <p class="page-sub">Everything you've logged, and everything the model projects, on one horizon line.</p>
+
+    <div class="horizon-line mb-4" style="--today-pos:35%;"><div class="today-dot"></div></div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card-hfe">
+          <h3 style="font-size:1rem;">Log an event</h3>
+          <form id="history-form" class="d-flex flex-column gap-2 mt-2">
+            <input type="text" class="form-control hfe-input" id="event" placeholder="e.g. Started strength training" required>
+            <select class="form-control hfe-input" id="category">
+              <option>General</option>
+              <option>Nutrition & Activity</option>
+              <option>Cardiovascular</option>
+              <option>Metabolic</option>
+              <option>Mental Wellbeing</option>
+              <option>Preventive Screening</option>
+            </select>
+            <textarea class="form-control hfe-input" id="notes" placeholder="Notes (optional)" rows="2"></textarea>
+            <button type="submit" class="btn btn-signal btn-sm align-self-start">Add to timeline</button>
+          </form>
+        </div>
+
+        <div class="card-hfe mt-3">
+          <h3 style="font-size:1rem;">Recorded history</h3>
+          <div class="timeline-track mt-3" id="history-track">
+            <div class="empty-state">No history logged yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-hfe">
+          <h3 style="font-size:1rem;">Projected future</h3>
+          <p style="color:var(--ink-muted);font-size:0.87rem;">Based on your most recent simulation. Rebuild it from the dashboard any time your profile changes.</p>
+          <div class="timeline-track future mt-3" id="future-track">
+            <div class="empty-state">No profile yet — <a href="{{ url_for('profile_page') }}">build one</a> to see your projection.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+HFE.requireAuth();
+
+function renderHistory(items) {
+  const el = document.getElementById("history-track");
+  if (!items || !items.length) {
+    el.innerHTML = `<div class="empty-state">No history logged yet.</div>`;
+    return;
+  }
+  el.innerHTML = items.map(i => `
+    <div class="timeline-entry">
+      <div class="t-date">${(i.recorded_at || "").toString().slice(0, 10)} · ${i.category}</div>
+      <div class="t-title">${i.event}</div>
+      ${i.notes ? `<div style="color:var(--ink-muted);font-size:0.87rem;">${i.notes}</div>` : ""}
+    </div>
+  `).join("");
+}
+
+function renderFuture(timeline) {
+  const el = document.getElementById("future-track");
+  if (!timeline || !timeline.length) {
+    el.innerHTML = `<div class="empty-state">No projection available yet.</div>`;
+    return;
+  }
+  const milestones = timeline.filter(t => [0, 2, 5, 10].includes(t.year));
+  el.innerHTML = milestones.map(t => `
+    <div class="timeline-entry">
+      <div class="t-date">Year +${t.year} · age ${t.age}</div>
+      <div class="t-title">${t.high_risk_probability}% projected high-risk probability</div>
+      <div style="color:var(--ink-muted);font-size:0.87rem;">BMI ${t.bmi} · BP ${t.systolic_bp} · Glucose ${t.glucose}</div>
+    </div>
+  `).join("");
+}
+
+async function loadHistory() {
+  const { history } = await HFE.apiFetch("/api/history");
+  renderHistory(history);
+}
+
+async function loadFuture() {
+  try {
+    const { profile } = await HFE.apiFetch("/api/profile");
+    if (!profile || !profile.id) return;
+    const { simulation } = await HFE.apiFetch("/api/predict/simulate?years=10", { method: "POST", body: JSON.stringify({}) });
+    renderFuture(simulation.timeline);
+  } catch { /* leave empty state */ }
+}
+
+document.getElementById("history-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    event: document.getElementById("event").value,
+    category: document.getElementById("category").value,
+    notes: document.getElementById("notes").value,
+  };
+  await HFE.apiFetch("/api/history", { method: "POST", body: JSON.stringify(payload) });
+  document.getElementById("history-form").reset();
+  loadHistory();
+});
+
+loadHistory();
+loadFuture();
+</script>
+{% endblock %}

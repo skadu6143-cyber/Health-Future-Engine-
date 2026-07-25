@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Log in — Health Future Engine{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-side">
+    <div class="eyebrow" style="font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--signal-teal);margin-bottom:1rem;">Welcome back</div>
+    <h2>Your timeline picked up right where you left off.</h2>
+    <p>Log in to see your latest risk score, projections and preventive plan.</p>
+    <div class="horizon-line" style="margin-top:3rem;--today-pos:50%;">
+      <div class="today-dot"></div>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="auth-card">
+      <h2 style="font-size:1.6rem;">Log in</h2>
+      <p style="color:var(--ink-muted);margin-bottom:1.6rem;">New here? <a href="{{ url_for('register_page') }}">Create a profile</a></p>
+
+      <div class="auth-error" id="error-box"></div>
+
+      <form id="login-form" novalidate>
+        <div class="mb-3">
+          <label class="form-label" for="email">Email</label>
+          <input type="email" class="form-control hfe-input" id="email" required autocomplete="email">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" class="form-control hfe-input" id="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-signal w-100" id="submit-btn">Log in</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorBox = document.getElementById("error-box");
+  const btn = document.getElementById("submit-btn");
+  errorBox.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Logging in…";
+
+  try {
+    const body = await HFE.apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+    HFE.setSession(body.token, body.user);
+    window.location.href = "/dashboard";
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "Log in";
+  }
+});
+</script>
+{% endblock %}

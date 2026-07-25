@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Health Future Engine — See your health before it happens{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="eyebrow"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>Predictive health intelligence</div>
+        <h1>See your health<br>before it happens.</h1>
+        <p class="lead">The Health Future Engine turns your everyday vitals into a forward-looking simulation — so you can act on risks years before they become diagnoses.</p>
+        <div class="d-flex gap-3 flex-wrap">
+          <a href="{{ url_for('register_page') }}" class="btn btn-signal">Build my health profile</a>
+          <a href="#modules" class="btn btn-outline-signal">See how it works</a>
+        </div>
+
+        <div class="horizon-line">
+          <div class="today-dot"></div>
+        </div>
+        <div class="horizon-caption">
+          <span>Recorded history</span>
+          <span>Today</span>
+          <span>10-year projection</span>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <div class="stat-num">10</div>
+            <div class="stat-label">years simulated forward from your current vitals</div>
+          </div>
+          <div>
+            <div class="stat-num">7</div>
+            <div class="stat-label">AI modules, from profile to prevention</div>
+          </div>
+          <div>
+            <div class="stat-num">100%</div>
+            <div class="stat-label">explainable — every risk score shows its reasoning</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="modules">
+  <div class="container">
+    <div class="section-eyebrow">The pipeline</div>
+    <h2 class="section-heading">Seven modules, one continuous line from data to decision</h2>
+    <p class="section-sub">Each step feeds the next — your profile becomes a simulation, the simulation becomes a risk score, and the score becomes a plan you can actually follow.</p>
+
+    <div class="pipeline">
+
+      <div class="pipeline-step">
+        <div class="node">01</div>
+        <h3>Digital Health Profile</h3>
+        <p>Age, vitals, lifestyle and family history are captured once and stored securely — the foundation every other module reads from.</p>
+        <span class="tech-tag">MongoDB · health_profiles</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">02</div>
+        <h3>Future Health Simulation</h3>
+        <p>A transparent, rule-based model projects your BMI, blood pressure, glucose and cholesterol forward year by year under your current habits.</p>
+        <span class="tech-tag">Pandas · NumPy</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">03</div>
+        <h3>Disease Risk Prediction</h3>
+        <p>A Random Forest classifier trained on weighted clinical risk factors scores your Low / Moderate / High risk with a confidence level.</p>
+        <span class="tech-tag">Scikit-learn · Random Forest</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">04</div>
+        <h3>Explainable AI</h3>
+        <p>Every prediction ships with the ranked factors that drove it — no black box, just the reasoning behind your number.</p>
+        <span class="tech-tag">Feature importance ranking</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">05</div>
+        <h3>AI Health Coach</h3>
+        <p>Your dashboard translates risk factors into a prioritized, plain-language action list — updated every time you re-check your risk.</p>
+        <span class="tech-tag">Flask API</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">06</div>
+        <h3>Preventive Recommendations</h3>
+        <p>Concrete, categorized next steps — nutrition, screening, sleep, stress — ranked by how much they move your risk.</p>
+        <span class="tech-tag">MongoDB · recommendations</span>
+      </div>
+
+      <div class="pipeline-step">
+        <div class="node">07</div>
+        <h3>Interactive Health Timeline</h3>
+        <p>Past check-ins and future projections sit on one horizon line, so you can see exactly where today's choices lead.</p>
+        <span class="tech-tag">Chart.js</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how" style="background:var(--surface-sunken);">
+  <div class="container">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-heading">From a five-minute form to a ten-year outlook</h2>
+
+    <div class="row g-4 mt-3">
+      <div class="col-md-4">
+        <div class="card-hfe hoverable h-100">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-4 3.6-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h3 style="font-size:1.05rem;">1. Create your profile</h3>
+          <p style="color:var(--ink-muted);font-size:0.92rem;">Answer a short set of questions about your vitals and lifestyle — takes about five minutes.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card-hfe hoverable h-100">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 17l5-5 4 4 9-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3 style="font-size:1.05rem;">2. Get your risk score</h3>
+          <p style="color:var(--ink-muted);font-size:0.92rem;">The model scores your near-term risk and shows exactly which factors are driving it.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card-hfe hoverable h-100">
+          <div class="card-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 19h16M7 15V9M12 15V5M17 15v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h3 style="font-size:1.05rem;">3. Follow your plan</h3>
+          <p style="color:var(--ink-muted);font-size:0.92rem;">Track prioritized recommendations and watch your projected timeline shift as habits change.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section text-center">
+  <div class="container">
+    <h2 class="section-heading mx-auto">Your future health is not fixed. It's forecastable — and changeable.</h2>
+    <a href="{{ url_for('register_page') }}" class="btn btn-signal mt-3">Start your profile — it's free</a>
+  </div>
+</section>
+
+{% endblock %}

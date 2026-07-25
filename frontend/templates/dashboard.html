@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Health Future Engine{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a class="side-link active" href="{{ url_for('dashboard_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Dashboard
+    </a>
+    <a class="side-link" href="{{ url_for('profile_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-4 3.6-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Health Profile
+    </a>
+    <a class="side-link" href="{{ url_for('timeline_page') }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l2-7 4 14 2-7h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Timeline
+    </a>
+  </aside>
+
+  <main class="app-main">
+    <h1 class="page-title">Welcome back<span id="user-name-suffix"></span></h1>
+    <p class="page-sub">Here's where your future health stands today.</p>
+
+    <div id="no-profile-alert" class="card-hfe mb-4" style="display:none;border-color:#f5c6c1;">
+      <strong>No health profile yet.</strong>
+      <span style="color:var(--ink-muted);"> Add your vitals to unlock predictions.</span>
+      <a href="{{ url_for('profile_page') }}" class="btn btn-signal btn-sm ms-2">Build my profile</a>
+    </div>
+
+    <div id="dashboard-content" style="display:none;">
+      <!-- Top stat row -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="label">Current risk level</div>
+            <div class="value" id="risk-value">—</div>
+            <span class="risk-badge" id="risk-badge-el" style="margin-top:0.5rem;"><span class="dot"></span><span id="risk-confidence">—</span></span>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="label">10-year high-risk trend</div>
+            <div class="value" id="trend-value">—</div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="label">Lifestyle multiplier</div>
+            <div class="value" id="lifestyle-value">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Future simulation chart -->
+        <div class="col-lg-7">
+          <div class="card-hfe h-100">
+            <h3 style="font-size:1.05rem;">Future Health Simulation</h3>
+            <p style="color:var(--ink-muted);font-size:0.87rem;margin-bottom:1rem;">Projected high-risk probability over the next 10 years, based on your current profile and habits.</p>
+            <canvas id="simulationChart" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Explainable AI -->
+        <div class="col-lg-5">
+          <div class="card-hfe h-100">
+            <h3 style="font-size:1.05rem;">Explainable AI</h3>
+            <p style="color:var(--ink-muted);font-size:0.87rem;margin-bottom:0.5rem;">The factors driving your current score, ranked by influence.</p>
+            <div id="explain-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <!-- AI Health Coach / Recommendations -->
+        <div class="col-lg-7">
+          <div class="card-hfe h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <h3 style="font-size:1.05rem;margin-bottom:0;">AI Health Coach — Recommendations</h3>
+              <button class="btn btn-outline-signal btn-sm" style="color:var(--brand-navy);border-color:var(--line-hairline);" id="refresh-btn">Re-run prediction</button>
+            </div>
+            <p style="color:var(--ink-muted);font-size:0.87rem;margin-bottom:0.5rem;">Prioritized actions to shift your future trajectory.</p>
+            <div id="rec-list"></div>
+          </div>
+        </div>
+
+        <!-- Appointments -->
+        <div class="col-lg-5">
+          <div class="card-hfe h-100">
+            <h3 style="font-size:1.05rem;">Upcoming Appointments</h3>
+            <div id="appt-list" class="mb-3"></div>
+            <form id="appt-form" class="d-flex flex-column gap-2">
+              <input type="text" class="form-control hfe-input" id="appt-title" placeholder="e.g. Annual checkup" required>
+              <input type="date" class="form-control hfe-input" id="appt-date" required>
+              <button type="submit" class="btn btn-signal btn-sm">Add appointment</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script>
+HFE.requireAuth();
+const user = HFE.getUser();
+if (user && user.name) {
+  document.getElementById("user-name-suffix").textContent = `, ${user.name.split(" ")[0]}`;
+}
+
+function riskBadgeHtml(label) {
+  return `<span class="dot"></span>${label} risk`;
+}
+
+function renderExplanations(explanations) {
+  const el = document.getElementById("explain-list");
+  if (!explanations || !explanations.length) {
+    el.innerHTML = `<div class="empty-state">No dominant risk factors detected.</div>`;
+    return;
+  }
+  el.innerHTML = explanations.map(e => `
+    <div class="explain-row">
+      <div>
+        <div class="factor-name">${e.factor.replace(/_/g, " ")}</div>
+        <div class="factor-msg">${e.message}</div>
+      </div>
+      <div class="explain-bar-track"><div class="explain-bar-fill" style="width:${Math.min(e.impact_weight * 3, 100)}%;"></div></div>
+    </div>
+  `).join("");
+}
+
+function renderRecommendations(recs) {
+  const el = document.getElementById("rec-list");
+  if (!recs || !recs.length) {
+    el.innerHTML = `<div class="empty-state">Run a prediction to get your plan.</div>`;
+    return;
+  }
+  el.innerHTML = recs.map(r => `
+    <div class="rec-item">
+      <span class="rec-priority ${r.priority}">${r.priority}</span>
+      <div>
+        <div class="rec-category">${r.category}</div>
+        <div style="font-weight:600;">${r.title}</div>
+        <div style="color:var(--ink-muted);font-size:0.87rem;">${r.detail}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderAppointments(appts) {
+  const el = document.getElementById("appt-list");
+  if (!appts || !appts.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:1rem;">No appointments scheduled.</div>`;
+    return;
+  }
+  el.innerHTML = appts.map(a => `
+    <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--line-hairline);">
+      <div>
+        <div style="font-weight:600;font-size:0.9rem;">${a.title}</div>
+        <div class="mono" style="font-size:0.76rem;color:var(--ink-muted);">${a.date}</div>
+      </div>
+      <button class="btn btn-sm" style="color:var(--risk-high);" onclick="deleteAppt('${a.id}')">&times;</button>
+    </div>
+  `).join("");
+}
+
+let simChart;
+function renderSimulationChart(sim) {
+  const ctx = document.getElementById("simulationChart");
+  const labels = sim.timeline.map(t => `Yr ${t.year}`);
+  const data = sim.timeline.map(t => t.high_risk_probability);
+  const todayIndex = 0;
+
+  if (simChart) simChart.destroy();
+  simChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "High-risk probability (%)",
+        data,
+        borderColor: "#17b6a0",
+        backgroundColor: "rgba(23,182,160,0.08)",
+        segment: {
+          borderDash: ctx => (ctx.p0DataIndex >= todayIndex ? [6, 5] : undefined),
+        },
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        pointBackgroundColor: "#17b6a0",
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } },
+      },
+    },
+  });
+}
+
+async function deleteAppt(id) {
+  await HFE.apiFetch(`/api/appointments/${id}`, { method: "DELETE" });
+  loadAppointments();
+}
+
+async function loadAppointments() {
+  const { appointments } = await HFE.apiFetch("/api/appointments");
+  renderAppointments(appointments);
+}
+
+document.getElementById("appt-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = document.getElementById("appt-title").value;
+  const date = document.getElementById("appt-date").value;
+  await HFE.apiFetch("/api/appointments", { method: "POST", body: JSON.stringify({ title, date }) });
+  document.getElementById("appt-form").reset();
+  loadAppointments();
+});
+
+async function runPredictionAndSimulation() {
+  const [{ prediction, recommendations }, { simulation }] = await Promise.all([
+    HFE.apiFetch("/api/predict/risk", { method: "POST", body: JSON.stringify({}) }),
+    HFE.apiFetch("/api/predict/simulate?years=10", { method: "POST", body: JSON.stringify({}) }),
+  ]);
+
+  document.getElementById("risk-value").textContent = prediction.risk_label;
+  document.getElementById("risk-value").style.color = HFE.riskColor(prediction.risk_label);
+  const badge = document.getElementById("risk-badge-el");
+  badge.className = `risk-badge risk-${prediction.risk_label}`;
+  document.getElementById("risk-confidence").textContent = `${prediction.confidence}% confidence`;
+
+  const last = simulation.timeline[simulation.timeline.length - 1];
+  document.getElementById("trend-value").textContent = `${last.high_risk_probability}%`;
+  document.getElementById("lifestyle-value").textContent = `${simulation.lifestyle_multiplier}×`;
+
+  renderExplanations(prediction.explanations);
+  renderRecommendations(recommendations);
+  renderSimulationChart(simulation);
+}
+
+document.getElementById("refresh-btn").addEventListener("click", async (e) => {
+  e.target.textContent = "Running…";
+  e.target.disabled = true;
+  try {
+    await runPredictionAndSimulation();
+  } finally {
+    e.target.textContent = "Re-run prediction";
+    e.target.disabled = false;
+  }
+});
+
+async function init() {
+  try {
+    const { profile } = await HFE.apiFetch("/api/profile");
+    if (!profile || !profile.id) {
+      document.getElementById("no-profile-alert").style.display = "block";
+      return;
+    }
+    document.getElementById("dashboard-content").style.display = "block";
+    await runPredictionAndSimulation();
+    await loadAppointments();
+  } catch (err) {
+    document.getElementById("no-profile-alert").style.display = "block";
+  }
+}
+init();
+</script>
+{% endblock %}
